@@ -1,16 +1,17 @@
 CXX = g++
 CXXFLAGS = -std=c++17 -Wall -Wextra -Iinclude
-SANITIZE_FLAGS = -fsanitize=address -g
 
-SRC = src/main.cpp
 APP = app
-
-#TEST_SRC = \
-	
-
 TEST_BIN = tests_run
 
-GTEST_FLAGS = $(shell pkg-config --cflags --libs gtest_main)
+SRC = src/main.cpp
+TEST_SRC = tests/main_tests.cpp \
+           tests/test_generators.cpp \
+           tests/test_lazy_sequence.cpp \
+           tests/test_streams.cpp \
+           tests/test_statistics.cpp
+
+GTEST_FLAGS = -lgtest -pthread
 
 all: $(APP)
 
@@ -18,19 +19,12 @@ $(APP): $(SRC)
 	$(CXX) $(CXXFLAGS) $(SRC) -o $(APP)
 
 $(TEST_BIN): $(TEST_SRC)
-	$(CXX) $(CXXFLAGS) $(TEST_SRC) $(GTEST_FLAGS) -o $(TEST_BIN)
+	$(CXX) $(CXXFLAGS) $(TEST_SRC) -o $(TEST_BIN) $(GTEST_FLAGS)
 
 test: $(TEST_BIN)
-	./$(TEST_BIN)
-
-asan: CXXFLAGS += $(SANITIZE_FLAGS)
-asan: clean $(APP)
-
-asan-test: CXXFLAGS += $(SANITIZE_FLAGS)
-asan-test: clean $(TEST_BIN)
 	./$(TEST_BIN)
 
 clean:
 	rm -f $(APP) $(TEST_BIN)
 
-.PHONY: all test asan asan-test clean
+.PHONY: all test clean

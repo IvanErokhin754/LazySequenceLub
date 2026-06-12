@@ -83,7 +83,7 @@ template<typename T>
 void PrintWindow(const Sequence<T>& sequence, size_t current_position, size_t radius, bool is_infinite) {
     std::cout << "\nОкно последовательности вокруг позиции " << current_position - 1 << ":\n";
 
-    if (!is_infinite && sequenceGetLength() == 0) {
+    if (!is_infinite && sequence.GetLength() == 0) {
         std::cout << "Последовательность пуста\n";
         return;
     }
@@ -357,10 +357,7 @@ void RunFiniteSequenceExplorer() {
                         SequenceReadOnlyStream<int> statistics_stream(&sequence);
                         OnlineStatistics<int> statistics;
 
-                        StreamStatisticsProcessor<int>::ProcessAll(
-                            statistics_stream,
-                            statistics
-                        );
+                        StreamStatisticsProcessor<int>::ProcessAll(statistics_stream, statistics);
 
                         std::cout << "\nСтатистика всей последовательности:\n";
                         PrintStatistics(statistics);

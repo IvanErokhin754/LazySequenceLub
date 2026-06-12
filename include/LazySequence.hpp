@@ -1,6 +1,7 @@
 #ifndef LAZY_SEQUENCE_HPP
 #define LAZY_SEQUENCE_HPP
 
+#include "Ordinal.hpp"
 #include "MutableArraySequence.hpp"
 #include "Generator.hpp"
 #include <stdexcept>
@@ -10,9 +11,9 @@ class LazySequence : public Sequence<T> {
 private:
     mutable MutableArraySequence<T> cache_;
     Generator<T>* generator_;
-
     bool is_infinite_;
     size_t length_;
+    Ordinal ordinal_length_;
 
     void MaterializeUpTo(size_t index) const {
         if (!is_infinite_ && index >= length_) 
@@ -28,16 +29,25 @@ private:
     }
 
 public:
-    LazySequence() : cache_(), generator_(nullptr), is_infinite_(false), length_(0) {}
-    LazySequence(T* items, size_t count) : cache_(items, static_cast<int>(count)), generator_(nullptr), is_infinite_(false), length_(count) {} 
+    LazySequence() : cache_(), generator_(nullptr), is_infinite_(false), length_(0), ordinal_length_(0, 0) {}
+    LazySequence(T* items, size_t count) : cache_(items, static_cast<int>(count)), generator_(nullptr), is_infinite_(false), length_(count), ordinal_length_(0, count) {} 
     LazySequence(T* initial_items, size_t initial_count, Generator<T>* generator) : cache_(initial_items, static_cast<int>(initial_count)), 
-                                                                                    generator_(generator), is_infinite_(true), length_(0) {
+                                                                                    generator_(generator), is_infinite_(true), length_(0), ordinal_length_(1, 0) {
                                                                                         if (generator_ == nullptr)
                                                                                             throw std::invalid_argument("Generator is null");
                                                                                     }
     LazySequence(const LazySequence<T>& other) : cache_(other.cache_), generator_(other.generator_ ? other.generator_->Clone() : nullptr), is_infinite_(other.is_infinite_),
-                                                 length_(other.length_) {}
-    
+                                                 length_(other.length_), ordinal_length_(other.ordinal_length_) {}
+    LazySequence(Generator<T>* generator, size_t finite_length) : cache_(), generator_(generator), is_infinite_(false), length_(finite_length), ordinal_length_(0, finite_length) {
+                                                                                        if (generator_ == nullptr)
+                                                                                            throw std::invalid_argument("Generator is null");
+                                                                                    }
+
+    LazySequence(Generator<T>* generator) : cache_(), generator_(generator), is_infinite_(true), length_(0), ordinal_length_(1, 0) {
+                                                                                        if (generator_ == nullptr) {
+                                                                                            throw std::invalid_argument("Generator is null");
+                                                                                        }
+                                                                                    } 
     ~LazySequence() override {
         delete generator_;
     }
@@ -54,6 +64,7 @@ public:
         generator_ = new_generator;
         is_infinite_ = other.is_infinite_;
         length_ = other.length_;
+        ordinal_length_ = other.ordinal_length_;
 
         return *this;
     }
@@ -86,6 +97,18 @@ public:
             throw std::logic_error("Infinite sequence has no finite length");
         
         return length_;
+    }
+
+    Ordinal GetOrdinalLength() const {
+        return ordinal_length_;
+    }
+
+    const T& Get(const Ordinal& index) const {
+        if (index.IsFinite()) {
+            return Get(index.GetFinitePart());
+        }
+
+        throw std::out_of_range("Transfinite index is not supported for this LazySequence");
     }
 
     size_t GetMaterializedCount() const {
